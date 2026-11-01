@@ -1,0 +1,282 @@
+/* Read mode: a plain, fast page in DotGothic16 on snow. */
+.read {
+  background: var(--snow);
+  color: var(--ink);
+  font-family: var(--font-text);
+  padding-top: 72px;
+}
+
+.r-head {
+  padding: 56px var(--gutter) 72px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.r-head h1 {
+  font-family: var(--font-text);
+  font-weight: 400;
+  font-size: clamp(40px, 9vw, 112px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.r-tag-line {
+  margin-top: 24px;
+  max-width: 28ch;
+  font-size: clamp(22px, 3.2vw, 36px);
+  line-height: 1.3;
+}
+
+.r-contact {
+  margin-top: 24px;
+}
+
+.r-contact a {
+  display: inline-block;
+  padding: 10px 0;
+  min-height: 44px;
+}
+
+.r-stage {
+  padding: 72px 0;
+}
+
+.r-stage:nth-of-type(even) {
+  background: var(--mist);
+}
+
+.r-stage > h2,
+.r-stage > .r-body {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+
+.r-stage h2 {
+  font-family: var(--font-text);
+  font-weight: 400;
+  font-size: clamp(30px, 5vw, 56px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.r-body {
+  margin-top: 28px;
+}
+
+.r-body > * + * {
+  margin-top: 20px;
+}
+
+.r-body p,
+.r-body li {
+  max-width: var(--measure);
+}
+
+.r-body h3 {
+  font-family: var(--font-text);
+  font-weight: 400;
+  font-size: clamp(22px, 2.4vw, 28px);
+  line-height: 1.25;
+  margin-top: 40px;
+}
+
+.r-body h3 + p {
+  margin-top: 8px;
+}
+
+.r-big {
+  font-size: clamp(56px, 12vw, 144px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  max-width: none !important;
+}
+
+.r-big-cap {
+  display: block;
+  margin-top: 12px;
+  font-size: clamp(20px, 2.4vw, 28px);
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+.r-small {
+  font-size: 0.9em;
+}
+
+.r-note {
+  padding-left: 16px;
+  border-left: 8px solid var(--moss);
+}
+
+.r-stamp {
+  display: inline-block;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: var(--snow);
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1.6;
+}
+
+.r-list li + li {
+  margin-top: 10px;
+}
+
+.r-list li {
+  padding-left: 20px;
+  position: relative;
+}
+
+.r-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 8px;
+  height: 8px;
+  background: var(--moss);
+}
+
+.r-links li + li {
+  margin-top: 4px;
+}
+
+.r-links a,
+.r-body a {
+  display: inline-block;
+  padding: 8px 0;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* Desktop: the heading takes the left third, the body the rest, so the page stays full. */
+@media (min-width: 900px) {
+  .r-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    column-gap: 48px;
+    max-width: none;
+    padding: 96px max(var(--gutter), calc((100vw - 1280px) / 2 + var(--gutter)));
+  }
+
+  .r-stage > h2,
+  .r-stage > .r-body {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .r-stage > h2 {
+    position: sticky;
+    top: 96px;
+    align-self: start;
+  }
+
+  .r-body {
+    margin-top: 0;
+  }
+}
+
+/* Items */
+.r-items {
+  display: block;
+}
+
+.r-item {
+  padding: 20px 0 24px;
+}
+
+.r-items-team .r-item {
+  padding: 12px 0 16px;
+}
+
+.r-item h4 {
+  margin: 0;
+  font-family: var(--font-text);
+  font-weight: 400;
+  font-size: 1.25em;
+  line-height: 1.3;
+}
+
+.r-items-team h4 {
+  font-size: 1.05em;
+}
+
+.r-item .r-line {
+  font-size: 1.05em;
+  margin-top: 4px;
+}
+
+.r-item p + p,
+.r-item p + ul {
+  margin-top: 8px;
+}
+
+.r-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: var(--ink);
+  color: var(--snow);
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1.6;
+  vertical-align: middle;
+}
+
+/* Status */
+.r-status div {
+  display: flex;
+  gap: 12px;
+}
+
+.r-status dt::after {
+  content: ':';
+}
+
+.r-status dd {
+  margin: 0;
+}
+
+.r-skills li + li {
+  margin-top: 28px;
+}
+
+.r-skills h3 {
+  margin-top: 0;
+}
+
+/* Actions */
+.r-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.r-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 20px !important;
+  background: var(--ink);
+  color: var(--snow);
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  text-decoration: none !important;
+  clip-path: polygon(
+    0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
+  );
+}
+
+.r-btn-primary {
+  background: var(--dusk-orange);
+  color: var(--ink);
+}

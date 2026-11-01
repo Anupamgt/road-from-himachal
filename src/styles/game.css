@@ -1,0 +1,898 @@
+/* Game layer */
+.game-shell {
+  background: var(--deep-pine);
+  color: var(--snow);
+}
+
+.scroller {
+  position: relative;
+}
+
+/* The pinned stage: brand strip, game window (~60% laptop, ~42% phone), stage map, dialogue. */
+.stage {
+  /* ~56% of the viewport, but always leave room (~300px) for the longest dialogue text */
+  --win-h: clamp(300px, min(56svh, calc(100svh - 440px)), 720px);
+  position: sticky;
+  top: 0;
+  height: 100vh; /* taste-skill-ignore: fallback for browsers without svh */
+  height: 100svh;
+  overflow: hidden;
+  background: var(--pine);
+  display: grid;
+  grid-template-rows: 56px var(--win-h) auto minmax(0, 1fr);
+  row-gap: 0;
+  padding: 0 var(--gutter) 12px;
+}
+
+@media (max-width: 700px) {
+  .stage {
+    --win-h: 42svh;
+  }
+}
+
+@media (min-width: 701px) and (orientation: portrait) {
+  .stage {
+    --win-h: 40svh;
+  }
+}
+
+.stage-brand {
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1.6;
+  color: var(--snow);
+  padding-right: 168px; /* room for the read mode switch */
+}
+
+/* Game window: thick pixel frame (snow, then ink), stepped corners. */
+.gamewin {
+  --c: 8px;
+  min-height: 0;
+  padding: 4px;
+  background: var(--snow);
+}
+
+.gamewin-inner {
+  --c: 4px;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ink);
+  border: 4px solid var(--ink);
+}
+
+.gamewin-inner > canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* HUD across the top of the game window */
+.hud {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--ink);
+  color: var(--snow);
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hud-exp {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hud-track {
+  flex: 1 1 auto;
+  display: block;
+  height: 10px;
+  min-width: 40px;
+  background: var(--stone);
+  overflow: hidden;
+}
+
+.hud-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--road-yellow);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+/* Checkpoint banner */
+.banner {
+  position: absolute;
+  left: 50%;
+  top: 44px;
+  z-index: 3;
+  margin-left: 0;
+  padding: 10px 16px;
+  background: var(--road-yellow);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--display-sm);
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+
+.banner.is-turning {
+  background: var(--dusk-orange);
+}
+
+.banner.is-in {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition:
+    opacity 240ms var(--ease-out),
+    transform 240ms var(--ease-out);
+}
+
+/* Real product pictures in a pixel monitor or phone frame, over the scene */
+.shot {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  margin: 0;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--t-popup) var(--ease-out),
+    transform var(--t-popup) var(--ease-out);
+  pointer-events: none;
+}
+
+.shot.is-on {
+  opacity: 1;
+  transform: none;
+}
+
+.shot-frame {
+  --c: 4px;
+  padding: 6px;
+  background: var(--ink);
+  border: 3px solid var(--snow);
+  clip-path: polygon(
+    0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
+  );
+}
+
+.shot-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.shot-monitor {
+  width: clamp(150px, 30%, 380px);
+}
+
+.shot-phone {
+  width: clamp(84px, 15%, 150px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shot {
+    transform: none;
+    transition: opacity 180ms linear;
+  }
+}
+
+/* Stage map: a pixel route with one dot per stop */
+.stagemap {
+  padding: 6px 0 0;
+}
+
+.route {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.route::before {
+  content: '';
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  background: var(--moss);
+}
+
+.stop {
+  position: relative;
+  flex: 0 0 44px;
+  /* overlap neighbours slightly when 9 targets of 44px do not fit */
+  margin-inline: min(0px, calc((100% - 396px) / 18));
+}
+
+.stop-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.stop-dot {
+  display: block;
+  width: 14px;
+  height: 14px;
+  background: var(--stone);
+  border: 3px solid var(--ink);
+  transition: transform var(--t-press) var(--ease-out);
+}
+
+.stop-btn.is-passed .stop-dot {
+  background: var(--leaf);
+}
+
+.stop-btn.is-current .stop-dot {
+  background: var(--road-yellow);
+  transform: scale(1.4);
+}
+
+.stop-label {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  z-index: 5;
+  padding: 6px 8px;
+  background: var(--ink);
+  color: var(--snow);
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity var(--t-popup) var(--ease-out);
+}
+
+.stop[data-edge='start'] .stop-label {
+  left: 0;
+  transform: none;
+}
+
+.stop[data-edge='end'] .stop-label {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.stop-btn:focus-visible .stop-label {
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .stop-btn:hover .stop-label {
+    opacity: 1;
+  }
+}
+
+.stop-btn:active .stop-dot {
+  transform: scale(0.9);
+}
+
+/* Dialogue box: ink box, snow pixel border, hard 4px offset under it (the only one in the game) */
+.dialogue-wrap {
+  position: relative;
+  min-height: 0;
+  padding-top: 8px;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.run-hint {
+  --c: 4px;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border: 4px solid var(--snow);
+  background: var(--ink);
+  color: var(--snow);
+  flex-direction: column;
+  gap: 12px;
+  font-size: var(--text);
+  line-height: var(--leading);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-popup) var(--ease-out);
+}
+
+.hint-lead {
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1.3;
+}
+
+.hint-next {
+  font-family: var(--font-display);
+  font-size: var(--display-sm);
+  line-height: 1.6;
+  color: var(--road-yellow);
+}
+
+.run-hint.is-on {
+  opacity: 1;
+}
+
+.dialogue-wrap.has-dialogue .run-hint {
+  opacity: 0;
+}
+
+.dialogue-shadow {
+  position: absolute;
+  inset: 8px 4px 4px 0;
+  min-height: 0;
+  filter: drop-shadow(4px 4px 0 var(--deep-pine)); /* taste-skill-ignore: the one hard offset the brief asks for, under the floating dialogue box */
+  pointer-events: none;
+}
+
+.dialogue {
+  --c: 4px;
+  height: 100%;
+  padding: 4px;
+  background: var(--snow);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  visibility: hidden;
+  opacity: 0;
+  transform: scale(0.96);
+  transform-origin: 50% 100%;
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 180ms var(--ease-out),
+    visibility 0s linear 180ms;
+}
+
+.dialogue.is-open {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--t-dialogue) var(--ease-out),
+    transform var(--t-dialogue) var(--ease-out),
+    visibility 0s;
+}
+
+.dialogue-inner {
+  --c: 4px;
+  overflow-anchor: none; /* swapping the text must not make the browser scroll the box */
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 160px minmax(0, 65ch) minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 20px 28px;
+  padding: 16px 20px;
+  background: var(--ink);
+  color: var(--snow);
+}
+
+.dlg-who {
+  grid-column: 1;
+}
+
+.dlg-body {
+  grid-column: 2;
+}
+
+.dlg-aside {
+  grid-column: 3;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.dlg-actions {
+  grid-column: 4;
+}
+
+.dlg-big {
+  font-size: clamp(48px, 6vw, 88px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--road-yellow);
+}
+
+.dlg-big-cap {
+  font-size: var(--text);
+  line-height: 1.4;
+  max-width: 24ch;
+}
+
+.dlg-note {
+  max-width: 34ch;
+  padding-left: 14px;
+  border-left: 8px solid var(--moss);
+  font-size: var(--text);
+  line-height: 1.5;
+}
+
+.dlg-stamp {
+  padding: 6px 12px;
+  background: var(--snow);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1.6;
+}
+
+.dlg-who {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: 160px;
+}
+
+.dlg-portrait {
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+  background: var(--pine);
+}
+
+.dlg-speaker {
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1.6;
+  color: var(--road-yellow);
+}
+
+.dlg-title {
+  font-family: var(--font-text);
+  font-weight: 400;
+  font-size: var(--text);
+  line-height: 1.3;
+  margin-top: 4px;
+}
+
+.dlg-body {
+  min-height: 0;
+  overflow-y: auto;
+  font-size: var(--text);
+  line-height: var(--leading);
+}
+
+.dlg-body > * {
+  max-width: var(--measure);
+}
+
+.dlg-sub {
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1.6;
+  color: var(--road-yellow);
+}
+
+.dlg-text .rest {
+  opacity: 0;
+}
+
+.dlg-extra {
+  margin-top: 16px;
+}
+
+.dlg-extra > * + * {
+  margin-top: 12px;
+}
+
+.dlg-list li {
+  padding-left: 18px;
+  position: relative;
+}
+
+.dlg-list li + li {
+  margin-top: 8px;
+}
+
+.dlg-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 8px;
+  height: 8px;
+  background: var(--road-yellow);
+}
+
+.dlg-links a {
+  display: inline-block;
+  padding: 8px 0;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+.dlg-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dlg-readmore,
+.dlg-back {
+  min-height: 44px;
+  padding: 0 14px;
+  background: var(--snow);
+  color: var(--ink);
+  border: 0;
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1;
+  transition: transform var(--t-press) var(--ease-out);
+}
+
+.dlg-readmore:active,
+.dlg-back:active {
+  transform: scale(0.97);
+}
+
+.dlg-next {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  animation: blink 1s steps(1, end) infinite;
+}
+
+.dlg-next[hidden] {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dlg-readmore:hover,
+  .dlg-back:hover {
+    background: var(--road-yellow);
+  }
+}
+
+/* Tablet widths: the aside moves under the text, and the box scrolls if it must. */
+@media (min-width: 701px) and (max-width: 1100px) {
+  .dialogue-inner {
+    grid-template-columns: 160px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-content: start;
+    overflow-y: auto;
+    }
+
+  .dlg-who {
+    grid-row: 1 / 3;
+  }
+
+  .dlg-body {
+    grid-row: 1;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .dlg-aside {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 14px 28px;
+    overflow: visible;
+  }
+
+  .dlg-actions {
+    grid-column: 3;
+    grid-row: 1 / 3;
+  }
+}
+
+@media (max-width: 700px) {
+  .stage-brand {
+    font-size: var(--display-xs);
+    padding-right: 150px;
+  }
+
+  .hud {
+    gap: 8px;
+    padding: 0 8px;
+  }
+
+  .banner {
+    font-size: var(--display-xs);
+    padding: 8px 12px;
+  }
+
+  /* Phone: one column that scrolls inside the box, in reading order. */
+  .dialogue-inner {
+    display: block;
+    overflow-y: auto;
+      padding: 12px;
+  }
+
+  .dlg-who {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .dlg-body {
+    overflow: visible;
+  }
+
+  .dlg-actions {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .dlg-aside {
+    overflow: visible;
+    margin-top: 8px;
+    gap: 8px;
+  }
+
+  .dlg-big {
+    font-size: 34px;
+  }
+
+  .dlg-stamp {
+    padding: 4px 10px;
+  }
+
+  .dlg-big-cap,
+  .dlg-note {
+    font-size: 17px;
+    line-height: 1.35;
+  }
+
+  .dlg-portrait {
+    flex: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner,
+  .banner.is-in {
+    transform: translate(-50%, 0);
+  }
+
+  .banner {
+    transition: opacity 180ms linear;
+  }
+
+  .banner.is-in {
+    transition: opacity 180ms linear;
+  }
+
+  .dialogue,
+  .dialogue.is-open {
+    transform: none;
+    transition: opacity 180ms linear;
+  }
+
+  .dlg-next,
+  .stop-dot,
+  .dlg-readmore {
+    animation: none;
+    transition: none;
+  }
+
+  .stop-btn.is-current .stop-dot {
+    transform: none;
+  }
+}
+
+/* ---------- Title screen ---------- */
+.title {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden;
+  background: var(--night-blue);
+}
+
+.title.is-away {
+  visibility: hidden;
+}
+
+.title-art {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.title-art canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.title-ui {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px;
+  padding: clamp(56px, 13vh, 140px) var(--gutter) 24px;
+  text-align: center;
+  overflow-y: auto;
+}
+
+.title h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(28px, min(7.4vw, 9.5vh), 76px);
+  line-height: 1.25;
+  color: var(--snow);
+  /* 4px stroke centred on the edge shows a 2px ink outline outside the letters */
+  -webkit-text-stroke: 4px var(--ink);
+  paint-order: stroke fill;
+  max-width: 100%;
+}
+
+.title-tagline {
+  max-width: 34ch;
+  font-size: max(18px, var(--text));
+  padding: 12px 20px;
+  background: var(--ink);
+  color: var(--snow);
+  line-height: var(--leading);
+}
+
+.title-choices {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 560px;
+  margin-top: 4px;
+}
+
+.px-btn {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 10px 14px;
+  border: 4px solid var(--ink);
+  background: var(--ink);
+  color: var(--snow);
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1.7;
+  text-align: center;
+  clip-path: polygon(
+    0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
+  );
+  transition: transform var(--t-press) var(--ease-out);
+}
+
+.px-btn:focus-visible {
+  clip-path: none;
+}
+
+.px-btn:active {
+  transform: scale(0.97);
+}
+
+.px-btn .arrow {
+  flex: none;
+  width: 16px;
+  height: 20px;
+  opacity: 0;
+}
+
+.px-btn.is-selected {
+  border-color: var(--road-yellow);
+}
+
+.px-btn.is-selected .arrow {
+  opacity: 1;
+  animation: blink 1s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .px-btn:hover {
+    background: var(--pine);
+  }
+}
+
+.title-kana {
+  padding: 4px 12px;
+  background: var(--ink);
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--snow);
+}
+
+.px-btn span {
+  text-wrap: balance;
+}
+
+@media (max-width: 480px) {
+  .title-choices {
+    gap: 10px;
+  }
+
+  .px-btn {
+    gap: 6px;
+    padding: 10px 8px;
+  }
+
+  .px-btn .arrow {
+    width: 12px;
+    height: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .px-btn,
+  .px-btn.is-selected .arrow {
+    transition: none;
+    animation: none;
+  }
+}

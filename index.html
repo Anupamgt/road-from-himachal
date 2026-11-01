@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anupam Sharma: The Road from Himachal</title>
+    <meta name="description" content="An AI product builder's portfolio, played as a 16-bit marathon." />
+    <meta name="theme-color" content="#142a1d" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Anupam Sharma: The Road from Himachal" />
+    <meta property="og:description" content="An AI product builder's portfolio, played as a 16-bit marathon." />
+    <!-- The URL placeholder is filled from the SITE_URL environment variable at build time (see vite.config.ts and the deploy workflow). Without it, these three tags are left out. -->
+    <meta property="og:image" content="__SITE_URL__og.png" />
+    <meta property="og:url" content="__SITE_URL__" />
+    <meta name="twitter:image" content="__SITE_URL__og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <button class="mode-switch" id="mode-switch" type="button" aria-pressed="false">
+      <span class="knob" aria-hidden="true"></span>
+      <span>READ MODE</span>
+    </button>
+
+    <main id="main">
+      <div id="game" class="game-shell" hidden></div>
+      <div id="read" class="read"></div>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+node_modules
+dist
+.taste-skill
+shots-out
+__pycache__
+*.log
+
+# skills installed for development (not part of the site)
+.claude/
+.agents/
+skills-lock.json

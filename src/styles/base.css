@@ -1,0 +1,194 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: auto;
+}
+
+body {
+  margin: 0;
+  background: var(--snow);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: var(--text);
+  line-height: var(--leading);
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+dl,
+dd,
+figure,
+blockquote {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+}
+
+img,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Focus: road yellow outline with a hard ink ring so it reads on light and dark ground. */
+:focus-visible {
+  outline: 3px solid var(--road-yellow);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--ink); /* taste-skill-ignore: a hard ring so focus reads on any ground, not a drop shadow */
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--gutter);
+  top: -80px;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--ink);
+  color: var(--snow);
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: var(--gutter);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Pixel-stepped box corners: clip the four corners by one 4px step. */
+.pixel-box {
+  --c: var(--px);
+  clip-path: polygon(
+    0 var(--c),
+    var(--c) var(--c),
+    var(--c) 0,
+    calc(100% - var(--c)) 0,
+    calc(100% - var(--c)) var(--c),
+    100% var(--c),
+    100% calc(100% - var(--c)),
+    calc(100% - var(--c)) calc(100% - var(--c)),
+    calc(100% - var(--c)) 100%,
+    var(--c) 100%,
+    var(--c) calc(100% - var(--c)),
+    0 calc(100% - var(--c))
+  );
+}
+
+/* Read mode switch (top right, always available). */
+.mode-switch {
+  position: fixed;
+  top: 12px;
+  right: var(--gutter);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px;
+  background: var(--ink);
+  color: var(--snow);
+  border: 0;
+  font-family: var(--font-display);
+  font-size: var(--display-xs);
+  line-height: 1;
+  clip-path: polygon(
+    0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
+  );
+  transition: transform var(--t-press) var(--ease-out);
+}
+
+/* The stepped-corner clip would cut the focus outline off, so focus shows on a plain rectangle. */
+.mode-switch:focus-visible,
+.r-btn:focus-visible {
+  clip-path: none;
+}
+
+.mode-switch:active {
+  transform: scale(0.96);
+}
+
+.mode-switch .knob {
+  width: 28px;
+  height: 14px;
+  background: var(--stone);
+  position: relative;
+  flex: none;
+}
+
+.mode-switch .knob::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  background: var(--snow);
+  transition: transform var(--t-popup) var(--ease-out);
+}
+
+.mode-switch[aria-pressed='true'] .knob {
+  background: var(--road-yellow);
+}
+
+.mode-switch[aria-pressed='true'] .knob::after {
+  transform: translateX(14px);
+  background: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-switch,
+  .mode-switch .knob::after {
+    transition: none;
+  }
+}
