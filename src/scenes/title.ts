@@ -9,15 +9,14 @@ function ridge(x: number, amp: number, f1: number, f2: number, s: number): numbe
 
 /**
  * Title scene: dusk sky in flat bands, three mountain layers, a road coming toward the viewer,
- * a kilometre stone reading 0, and the runner standing at the start line (frame 9).
+ * a kilometre stone reading 0 and the start line. Returns where the runner stands.
  * Draws at any buffer size; positions are relative to W and H.
  */
 export function drawTitleScene(
   ctx: CanvasRenderingContext2D,
   W: number,
   H: number,
-  runnerSheet: HTMLImageElement | null,
-): void {
+): { cx: number; footY: number } {
   ctx.imageSmoothingEnabled = false;
   const yH = Math.round(H * 0.5);
 
@@ -126,10 +125,7 @@ export function drawTitleScene(
   const stoneY = yH + Math.round((H - yH) * st);
   drawStone(ctx, scx + halfAt(st) + 8, stoneY - 24, '0', { w: 16, h: 24 });
 
-  // --- Runner, standing at the start line (sprite frame 9 of 10, 64x64).
-  const rx = Math.round(scx - sh * 0.45 - 32);
-  const ry = sy + 8 - 60;
-  if (runnerSheet && runnerSheet.complete && runnerSheet.naturalWidth > 0) {
-    ctx.drawImage(runnerSheet, 8 * 64, 0, 64, 64, rx, ry, 64, 64);
-  }
+  // The runner is not part of the scene: the title screen draws him on a canvas of his own so he
+  // can turn and run. He stands on the road at the start line, facing the screen.
+  return { cx: scx, footY: sy + 8 };
 }

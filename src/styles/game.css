@@ -741,8 +741,26 @@
   background: var(--night-blue);
 }
 
+/* The title fades out over the game that is already in place beneath it (opacity only). */
+.title {
+  transition: opacity var(--t-dialogue) var(--ease-out);
+}
+
 .title.is-away {
+  opacity: 0;
   visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--t-dialogue) var(--ease-out), visibility 0s linear var(--t-dialogue);
+}
+
+/* While he turns and runs, the words step aside. */
+.title-ui {
+  transition: opacity var(--t-dialogue) var(--ease-out);
+}
+
+.title-ui.is-leaving {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .title-art {
@@ -891,7 +909,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .px-btn,
-  .px-btn.is-selected .arrow {
+  .px-btn.is-selected .arrow,
+  .title,
+  .title.is-away,
+  .title-ui {
     transition: none;
     animation: none;
   }

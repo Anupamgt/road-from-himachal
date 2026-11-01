@@ -390,7 +390,7 @@ export const ui = {
 export const todos: string[] = [
   'finish.nextStage: what I am looking for (Continue screen).',
   'public/og.png: regenerate with scripts/og.py once the real runner sprite is in.',
-  'public/sprites/runner_sheet_1x.png and portrait_32.png: placeholders until the real sprites are added.',
+  'public/sprites/runner_sheet_1x.png, runner_front.png (title pose) and portrait_32.png: placeholders until the real sprites are added.',
   'public/shots/minearchive.png and public/shots/sitewatch.png: not added yet; stages draw a fallback.',
   'Pictures of the flagship items (Mandate, Q-Commerce Retention Lab, AI Recruiter): icons only until real shots exist.',
 ];

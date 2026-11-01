@@ -14,7 +14,7 @@ export interface Fit {
  * the container so there are never empty strips.
  */
 export function coverFit(width: number, height: number): Fit {
-  const s = Math.min(6, Math.max(3, Math.floor(height / 220)));
+  const s = Math.min(5, Math.max(2, Math.floor(height / 300)));
   return { s, W: Math.ceil(width / s), H: Math.ceil(height / s) };
 }
 
