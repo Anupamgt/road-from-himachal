@@ -2,6 +2,7 @@ import { stages } from './content';
 import { loadImage, type Fit } from './engine/canvas';
 import { onReducedMotionChange, prefersReducedMotion } from './engine/prefs';
 import { Renderer, type RenderState, type StoneAt } from './engine/render';
+import { STAND_FRAME } from './engine/sprite';
 import { buildTimeline, jumpTo, whereIs, type Segment, type Timeline, type Where } from './engine/timeline';
 import { runtime } from './runtime';
 import { STONE_GAP } from './scenes/base';
@@ -14,13 +15,15 @@ import { createFinishUi } from './ui/finishUi';
 import { createFlights } from './ui/flights';
 import { createHud } from './ui/hud';
 import { createInventory } from './ui/inventory';
+import { preloadLandmarks } from './scenes/landmarks';
 import { createShotFrame } from './ui/shotFrame';
 import { createStageMap } from './ui/stageMap';
 import { createStatus } from './ui/status';
 import { createTitleScreen, type Choice } from './ui/titleScreen';
 
 const STRIDE = 5; // art pixels of travel per running frame
-const IDLE_MS = 140; // after this long without scrolling, a running figure stands
+const GLIDE_MS = 85; // the runner eases toward the scroll position with this time constant
+const MOVING_PX = 6; // closer than this to the scroll position counts as stopped
 const KM5 = stages.findIndex((s) => s.id === 'km5');
 const KM7 = stages.findIndex((s) => s.id === 'km7');
 const FINISH = stages.findIndex((s) => s.id === 'finish');
@@ -96,8 +99,43 @@ export function startGame(host: HTMLElement): void {
   };
 
   // ---------- Rendering ----------
-  let lastScrollAt = -1e9;
-  let idleTimer = 0;
+  // The camera does not jump with each wheel notch: it eases toward the scroll position, so the
+  // run is smooth and he settles into his stop. `shown` is the travel (scroll px) on screen.
+  let shown = 0;
+  let restSince: number | null = null;
+  let lastRestKey = -1;
+  let lastTick = 0;
+
+  const targetTravel = (): number => whereIs(tl, window.scrollY).travel;
+  const isMoving = (): boolean => !prefersReducedMotion() && Math.abs(targetTravel() - shown) > MOVING_PX;
+
+  /** Moves `shown` toward the scroll position. Returns true while it is still on its way. */
+  function glide(now: number): boolean {
+    const target = targetTravel();
+    const diff = target - shown;
+    if (lastTick === 0 || prefersReducedMotion() || Math.abs(diff) > window.innerHeight * 1.5) {
+      shown = target; // a jump from the stage map or a resize: no glide
+      return false;
+    }
+    if (Math.abs(diff) < 0.25) {
+      shown = target;
+      return false;
+    }
+    const dt = Math.min(64, Math.max(0, now - lastTick));
+    shown += diff * (1 - Math.exp(-dt / GLIDE_MS));
+    return true;
+  }
+
+  /** Milliseconds since he settled at a stone, or null while he runs or motion is reduced. */
+  function restMsNow(): number | null {
+    const w = whereIs(tl, window.scrollY);
+    if (prefersReducedMotion() || w.phase !== 'hold' || isMoving()) {
+      restSince = null;
+      return null;
+    }
+    if (restSince === null) restSince = performance.now();
+    return performance.now() - restSince;
+  }
 
   const stoneFor = (seg: Segment, s: number): StoneAt | null => {
     const stage = stages[seg.index];
@@ -134,7 +172,7 @@ export function startGame(host: HTMLElement): void {
     const scene = getScene(stages[seg.index].scene);
     const camHold = Math.floor((seg.travelStart + seg.runLen) / s);
     // Reduced motion: scenes are stills; the camera rests at the stone.
-    const cam = reduced ? camHold : Math.floor(w.travel / s);
+    const cam = reduced ? camHold : Math.floor(shown / s);
     const stone = stoneFor(seg, s);
     syncRuntime(w, cam);
 
@@ -151,12 +189,12 @@ export function startGame(host: HTMLElement): void {
       };
     }
 
-    let frame = 8; // standing
-    if (!reduced) {
-      if (w.phase === 'hold') frame = 9; // catching breath
-      else if (performance.now() - lastScrollAt < IDLE_MS) frame = Math.floor(cam / STRIDE) % 8;
-    }
-    return { cam, scene, stone, seam, frame, t: reduced ? 0 : performance.now() };
+    // Running while the camera is on the move; standing once it stops mid-road; at a stone he
+    // arrives out of breath (see the renderer), then straightens up.
+    const restMs = restMsNow();
+    let frame = STAND_FRAME;
+    if (!reduced && isMoving()) frame = (((Math.floor(cam / STRIDE) % 8) + 8) % 8);
+    return { cam, scene, stone, seam, frame, restMs, t: reduced ? 0 : performance.now() };
   }
 
   // True while the scene in view moves on its own (trucks, steam, confetti), so it keeps redrawing.
@@ -171,6 +209,16 @@ export function startGame(host: HTMLElement): void {
   // Scenes that move on their own redraw at about 30 fps: smooth enough, kinder to phones.
   let lastAnimDraw = 0;
   function frameLoop(now: number): void {
+    if (glide(now)) dirty = true;
+    lastTick = now;
+    const rest = restMsNow();
+    if (rest !== null) {
+      const key = rest < 3200 ? Math.floor(rest / 45) : 1000 + Math.floor(rest / 500);
+      if (key !== lastRestKey) {
+        lastRestKey = key;
+        dirty = true;
+      }
+    }
     if (!title.isVisible() && now - lastAnimDraw >= 33 && sceneAnimating()) {
       dirty = true;
       lastAnimDraw = now;
@@ -274,9 +322,6 @@ export function startGame(host: HTMLElement): void {
   }
 
   function onScroll(): void {
-    lastScrollAt = performance.now();
-    window.clearTimeout(idleTimer);
-    idleTimer = window.setTimeout(markDirty, IDLE_MS + 10); // redraw once the runner should stand
     update();
   }
 
@@ -306,6 +351,8 @@ export function startGame(host: HTMLElement): void {
       /* the scene still renders without the runner */
     });
 
+  preloadLandmarks();
+  window.addEventListener('landmark-loaded', markDirty);
   window.addEventListener('scroll', onScroll, { passive: true });
   resize();
   requestAnimationFrame(frameLoop);

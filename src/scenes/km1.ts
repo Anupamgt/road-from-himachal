@@ -1,6 +1,7 @@
 import { PAL, drawText, rect, textWidth } from '../art/pixel';
 import { drawHostel, drawLamp, drawPillar } from '../art/props';
 import type { Scene } from './base';
+import { drawLandmark } from './landmarks';
 
 /** KM 1: IIT Patna at night: hostel windows lit behind a campus gate with its sign. */
 export const km1: Scene = {
@@ -25,7 +26,8 @@ export const km1: Scene = {
   backdrop(ctx, L, _cam, _t, at) {
     // two hostel blocks, further away than the road so they drift slower
     drawHostel(ctx, at(-96, 0.7), L.yHorizon + 1, 132, 3, 2);
-    drawHostel(ctx, at(120, 0.7), L.yHorizon + 1, 150, 3, 7);
+    // the real gate, as pixel art, behind the drawn one
+    drawLandmark(ctx, 'iit_patna', L, at, 92, 0.7);
   },
   props(ctx, L, _cam, _t, at) {
     const left = at(-40);

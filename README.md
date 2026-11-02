@@ -38,6 +38,12 @@ Anything still missing is marked `TODO:` in that file and listed in `todos` at t
 
 Drop the files in with the same names and rebuild. The sprites now in the repository are the real ones. `npm run sprites` writes placeholders over `runner_sheet_1x.png` and `portrait_32.png`, so do not run it.
 
+### Landmarks
+
+The photos in `art-src/` (IIT Ropar, IIT Patna) are turned into palette pixel art by `python scripts/make-landmarks.py` (needs Pillow and numpy) and written to `public/landmarks/`. Patna's gate stands behind the KM 1 gate and Ropar's tower beyond the river at KM 3. To change a picture, replace the file in `art-src/` and rerun the script.
+
+At a stone he arrives bent over (frame 10) puffing breath clouds, then straightens (frame 9) and breathes slowly. `src/engine/sprite.ts` nudges each frame a pixel or two so his feet stay on the road when the pose changes.
+
 Two small things are drawn on top of the runner in code, because the sheet has no frame for them: the paper cup (from KM 7) and the arms-up pose at the finish. The tapri bench covers his legs so he reads as sitting.
 
 The Open Graph card is a screenshot of the title screen. After changing the sprite, run `npm run build`, `npm run preview`, and in another terminal:

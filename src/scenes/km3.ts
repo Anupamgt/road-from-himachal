@@ -1,6 +1,7 @@
 import { PAL, rect } from '../art/pixel';
 import { drawFlag, drawLaptopMap, drawTable } from '../art/props';
 import type { Scene } from './base';
+import { drawLandmark } from './landmarks';
 import { shots } from './shots';
 
 /** Reed tuft on the sand. */
@@ -39,6 +40,10 @@ export const km3: Scene = {
     dash: PAL.chai,
     nearTrees: null,
     stone: { top: PAL.yellow, face: PAL.snow },
+  },
+  backdrop(ctx, L, _cam, _t, at) {
+    // the sculpted tower at the IIT Ropar gate, far off across the river
+    drawLandmark(ctx, 'iit_ropar', L, at, 176, 0.8);
   },
   midground(ctx, L, cam) {
     // the river: a sky-blue ribbon with snow ripples, then a sand bank in front of it

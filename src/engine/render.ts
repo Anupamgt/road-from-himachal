@@ -1,6 +1,7 @@
 import { applyFit, type Fit } from './canvas';
 import { PAL, rect } from '../art/pixel';
 import { runtime } from '../runtime';
+import { BREATH_FRAME, BREATH_MOUTH, FRAME, FRAME_NUDGE, STAND_FRAME } from './sprite';
 import { STONE_GAP, drawWorld, layoutFor, placer, type Layout, type Scene } from '../scenes/base';
 
 export interface StoneAt {
@@ -17,12 +18,17 @@ export interface RenderState {
   seam: { x: number; prevScene: Scene; prevStone: StoneAt | null } | null;
   /** Runner sprite frame, 0-based: 0-7 run, 8 stand, 9 catching breath. */
   frame: number;
+  /** Milliseconds since he settled at a stone; null while he runs (or motion is reduced). */
+  restMs: number | null;
   t: number;
 }
 
 // 4x4 ordered-dither thresholds: the dissolve between scenes is a dither, never a smooth blend.
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
 const SEAM_HALF = 8;
+const GASSED_MS = 2200; // bent over, heaving
+const PUFF_EVERY = 260;
+const PUFF_LIFE = 1000;
 
 export class Renderer {
   readonly canvas: HTMLCanvasElement;
@@ -57,6 +63,39 @@ export class Renderer {
     this.actx.imageSmoothingEnabled = false;
     this.bctx.imageSmoothingEnabled = false;
     this.layout = layoutFor(fit.W, fit.H);
+  }
+
+  /**
+   * At a stone he arrives out of breath: bent over and heaving, puffing little clouds, for about
+   * two seconds; then he straightens up and breathes slowly. `puffMs` is null when no puffs show.
+   */
+  private restPose(restMs: number | null, frame: number): { frame: number; bob: number; puffMs: number | null } {
+    if (restMs === null) return { frame, bob: 0, puffMs: null };
+    if (restMs < GASSED_MS) {
+      return { frame: BREATH_FRAME, bob: Math.floor(restMs / 420) % 2, puffMs: restMs };
+    }
+    return { frame: STAND_FRAME, bob: Math.floor(restMs / 1100) % 2, puffMs: restMs < GASSED_MS + PUFF_LIFE ? restMs : null };
+  }
+
+  /** Pixel puffs of breath: a puff leaves his mouth every 300 ms, drifts up and away and shrinks. */
+  private drawPuffs(ctx: CanvasRenderingContext2D, x0: number, y0: number, ms: number | null): void {
+    if (ms === null) return;
+    const newest = Math.min(Math.floor(Math.min(ms, GASSED_MS) / PUFF_EVERY), 99);
+    for (let k = newest; k >= 0 && k > newest - 4; k--) {
+      const age = ms - k * PUFF_EVERY;
+      if (age < 0 || age > PUFF_LIFE) continue;
+      const u = age / PUFF_LIFE;
+      const step = Math.floor(age / 90); // moves in whole-pixel steps, like the rest of the art
+      const px = x0 + BREATH_MOUTH[0] + 1 + step * 2;
+      const py = y0 + BREATH_MOUTH[1] - 3 - Math.floor(step * 1.1) - (step % 2);
+      const size = u < 0.3 ? 6 : u < 0.65 ? 5 : 3;
+      if (u > 0.85 && (step & 1) === 0) continue; // flickers out
+      // a small cloud: a body, a lobe to the upper right and a shaded underside
+      rect(ctx, px, py, size, size, PAL.snow);
+      rect(ctx, px + size - 1, py - 2, size - 2, size - 2, PAL.snow);
+      rect(ctx, px, py + size - 1, size, 1, PAL.mist);
+      rect(ctx, px + size, py + 1, 2, 2, PAL.mist);
+    }
   }
 
   render(st: RenderState): void {
@@ -103,8 +142,15 @@ export class Renderer {
       drawWorld(ctx, L, st.cam, st.scene, st.stone, st.t);
     }
 
+    const rest = this.restPose(st.restMs, st.frame);
     if (this.sheet && this.sheet.complete) {
-      ctx.drawImage(this.sheet, st.frame * 64, 0, 64, 64, L.runnerCx - 32, L.footY - 61, 64, 64);
+      const [nx, ny] = FRAME_NUDGE[rest.frame];
+      ctx.drawImage(
+        this.sheet,
+        rest.frame * FRAME, 0, FRAME, FRAME,
+        L.runnerCx - 32 + nx, L.footY - 61 + ny + rest.bob, FRAME, FRAME,
+      );
+      this.drawPuffs(ctx, L.runnerCx - 32 + nx, L.footY - 61 + ny + rest.bob, rest.puffMs);
     }
 
     // Small things the runner carries or does, drawn on the sprite.

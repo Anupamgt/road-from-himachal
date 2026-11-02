@@ -1,6 +1,7 @@
 import { site, title } from '../content';
 import { applyFit, coverFit, loadImage } from '../engine/canvas';
 import { prefersReducedMotion } from '../engine/prefs';
+import { FRAME, FRAME_NUDGE, STAND_FRAME } from '../engine/sprite';
 import { drawTitleScene } from '../scenes/title';
 
 export type Choice = 'quick' | 'full';
@@ -62,10 +63,11 @@ export function createTitleScreen(host: HTMLElement, onChoose: (choice: Choice) 
   const drawRunner = (frame: number, dx = 0): void => {
     if (!rctx || !ready(sheet)) return;
     rctx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
-    rctx.drawImage(sheet, frame * 64, 0, 64, 64, Math.round(spot.cx + dx - 32), spot.footY - 61, 64, 64);
+    const [nx, ny] = FRAME_NUDGE[frame];
+    rctx.drawImage(sheet, frame * FRAME, 0, FRAME, FRAME, Math.round(spot.cx + dx - 32) + nx, spot.footY - 61 + ny, FRAME, FRAME);
   };
   /** At rest he faces the screen; without the portrait he stands side-on on the start line. */
-  const drawRest = (): void => (bust ? drawBust() : drawRunner(8));
+  const drawRest = (): void => (bust ? drawBust() : drawRunner(STAND_FRAME));
 
   // --- Scene: redraw when the container size changes.
   const redraw = (): void => {
@@ -116,7 +118,7 @@ export function createTitleScreen(host: HTMLElement, onChoose: (choice: Choice) 
         const u = t / SINK_MS;
         drawBust(artH * 0.5 * u * u);
       } else if (t < runAt) {
-        drawRunner(8);
+        drawRunner(STAND_FRAME);
       } else {
         const u = Math.min(1, (t - runAt) / RUN_MS);
         drawRunner(Math.floor((t - runAt) / CADENCE_MS) % 8, run * Math.pow(u, 1.6));
