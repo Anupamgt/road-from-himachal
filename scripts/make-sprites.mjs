@@ -162,39 +162,6 @@ function runnerFrame(kind, phase) {
   return f;
 }
 
-// The title-screen poses: frame 0 faces the screen, frame 1 is the three-quarter turn on the way
-// to the side-on run. 64x64 each, feet on y = 60, same palette as the runner.
-function frontFrame(turn) {
-  const f = new Img(64, 64);
-  const o = turn ? 2 : 0; // the turn shifts the face and body toward the direction of travel
-  const legX = turn ? [29, 35] : [28, 36];
-  for (const x of legX) {
-    f.line(x, 40, x, 57, 5, C.night);
-    f.rect(x - 3, 58, turn ? 9 : 7, 3, C.ink);
-  }
-  const torsoW = turn ? 12 : 14;
-  f.rect(32 - torsoW / 2 + o / 2, 25, torsoW, 15, C.sky);
-  f.rect(32 - torsoW / 2 + o / 2, 38, torsoW, 5, C.night);
-  f.rect(30 + o, 23, 4, 3, C.skin); // neck
-  // arms hang at the sides; the far arm is mostly hidden in the turn
-  const armL = 32 - torsoW / 2 - 3 + o / 2;
-  const armR = 32 + torsoW / 2 - 1 + o / 2;
-  if (!turn) f.rect(armL, 25, 4, 6, C.sky);
-  if (!turn) f.rect(armL, 31, 3, 10, C.skin);
-  f.rect(armR, 25, 4, 6, C.sky);
-  f.rect(armR + 1, 31, 3, 10, C.skin);
-  // head
-  f.rect(27 + o, 13, 10, 10, C.skin);
-  f.rect(26 + o, 11, 12, 5, C.ink); // hair
-  f.rect(26 + o, 13, turn ? 4 : 2, 7, C.ink);
-  f.rect(36 + o, 13, 2, 6, C.ink);
-  f.rect(26 + o, 10, 12, 2, C.yellow); // headband
-  f.rect(29 + o + (turn ? 2 : 0), 17, 2, 2, C.ink); // eyes
-  f.rect(33 + o + (turn ? 1 : 0), 17, 2, 2, C.ink);
-  f.rect(30 + o + (turn ? 2 : 0), 20, 4, 1, C.ink); // mouth
-  return f;
-}
-
 const sheet = new Img(640, 64);
 for (let i = 0; i < 8; i++) sheet.blit(runnerFrame('run', (i / 8) * Math.PI * 2), i * 64, 0);
 sheet.blit(runnerFrame('stand', 0), 8 * 64, 0);
@@ -215,8 +182,4 @@ portrait.rect(9, 3, 14, 2, C.yellow); // headband
 mkdirSync(new URL('../public/sprites/', import.meta.url), { recursive: true });
 writeFileSync(new URL('../public/sprites/runner_sheet_1x.png', import.meta.url), encodePng(sheet));
 writeFileSync(new URL('../public/sprites/portrait_32.png', import.meta.url), encodePng(portrait));
-const front = new Img(128, 64);
-front.blit(frontFrame(false), 0, 0);
-front.blit(frontFrame(true), 64, 0);
-writeFileSync(new URL('../public/sprites/runner_front.png', import.meta.url), encodePng(front));
 console.log('wrote placeholder sprites (replace with the real art)');

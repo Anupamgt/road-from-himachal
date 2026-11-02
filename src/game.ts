@@ -285,8 +285,7 @@ export function startGame(host: HTMLElement): void {
     const w = win.clientWidth;
     const h = win.clientHeight;
     if (w === 0 || h === 0) return;
-    // Each art pixel is 2 screen pixels, or 3 in a very tall window: finer than before, still crisp.
-    const s = h >= 700 ? 3 : 2;
+    const s = h >= 560 ? 4 : 3;
     const fit: Fit = { s, W: Math.ceil(w / s), H: Math.ceil(h / s) };
     renderer.resize(fit);
     chai.place(renderer.layout, s);

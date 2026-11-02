@@ -32,7 +32,7 @@ export function createTitleScreen(host: HTMLElement, onChoose: (choice: Choice) 
   host.appendChild(el);
 
   const canvas = el.querySelector('canvas') as HTMLCanvasElement;
-  // The runner has a canvas of his own, stacked over the scene, so he can turn and run.
+  // He has a canvas of his own, stacked over the scene, so he can sink away and run.
   const runnerCanvas = document.createElement('canvas');
   runnerCanvas.className = 'title-runner';
   canvas.after(runnerCanvas);
@@ -40,21 +40,32 @@ export function createTitleScreen(host: HTMLElement, onChoose: (choice: Choice) 
   const ui = el.querySelector('.title-ui') as HTMLElement;
   const buttons = [...el.querySelectorAll<HTMLButtonElement>('.px-btn')];
   let sheet: HTMLImageElement | null = null;
-  let front: HTMLImageElement | null = null;
+  let bust: HTMLImageElement | null = null;
   let visible = true;
   let leaving = false;
   let spot = { cx: 0, footY: 0 };
   let rctx: CanvasRenderingContext2D | null = null;
   let artW = 0;
+  let artH = 0;
 
-  /** One 64x64 frame of the runner, standing on `spot` (feet on the road), `dx` art pixels right. */
-  const drawRunner = (img: HTMLImageElement | null, frame: number, dx = 0): void => {
-    if (!rctx || !img || !img.complete || img.naturalWidth === 0) return;
+  const ready = (img: HTMLImageElement | null): img is HTMLImageElement =>
+    Boolean(rctx && img && img.complete && img.naturalWidth > 0);
+
+  /** The portrait faces the screen from the bottom edge of the title, `dy` art pixels down. */
+  const drawBust = (dy = 0): void => {
+    if (!rctx || !ready(bust)) return;
     rctx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
-    rctx.drawImage(img, frame * 64, 0, 64, 64, Math.round(spot.cx + dx - 32), spot.footY - 60, 64, 64);
+    const size = bust.naturalWidth;
+    rctx.drawImage(bust, Math.round(artW * 0.52 - size / 2), Math.round(artH - size + dy));
   };
-  /** At rest he faces the screen; without a front-facing sprite he stands side-on as before. */
-  const drawRest = (): void => (front ? drawRunner(front, 0) : drawRunner(sheet, 8));
+  /** One 64x64 frame of the runner, standing on `spot` (feet on the road), `dx` art pixels right. */
+  const drawRunner = (frame: number, dx = 0): void => {
+    if (!rctx || !ready(sheet)) return;
+    rctx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+    rctx.drawImage(sheet, frame * 64, 0, 64, 64, Math.round(spot.cx + dx - 32), spot.footY - 61, 64, 64);
+  };
+  /** At rest he faces the screen; without the portrait he stands side-on on the start line. */
+  const drawRest = (): void => (bust ? drawBust() : drawRunner(8));
 
   // --- Scene: redraw when the container size changes.
   const redraw = (): void => {
@@ -65,13 +76,14 @@ export function createTitleScreen(host: HTMLElement, onChoose: (choice: Choice) 
     spot = drawTitleScene(ctx, fit.W, fit.H);
     rctx = applyFit(runnerCanvas, fit);
     artW = fit.W;
+    artH = fit.H;
     if (!leaving) drawRest();
   };
   redraw();
   const imageBase = `${import.meta.env.BASE_URL}sprites/`;
   for (const [name, set] of [
     ['runner_sheet_1x.png', (img: HTMLImageElement) => (sheet = img)],
-    ['runner_front.png', (img: HTMLImageElement) => (front = img)],
+    ['portrait_128.png', (img: HTMLImageElement) => (bust = img)],
   ] as const) {
     loadImage(imageBase + name)
       .then((img) => {
@@ -79,43 +91,48 @@ export function createTitleScreen(host: HTMLElement, onChoose: (choice: Choice) 
         redraw();
       })
       .catch(() => {
-        /* the scene still draws without the runner */
+        /* the scene still draws without him */
       });
   }
 
   /**
-   * He turns from facing the screen to side-on, then breaks into a run toward the right, the
-   * direction the road goes. `onMidway` starts the game partway through the run, so the title's
-   * fade-out reveals it already in place.
+   * The portrait sinks out of the bottom edge, he is standing on the start line, then he breaks
+   * into a run toward the right, the direction the road goes. `onMidway` starts the game partway
+   * through the run, so the title's fade-out reveals it already in place.
    */
-  const TURN_MS = 200;
+  const SINK_MS = 220;
+  const STAND_MS = 140;
   const RUN_MS = 700;
   const CADENCE_MS = 55;
   const playLeave = (onMidway: () => void): void => {
     const start = performance.now();
     const run = Math.max(80, artW - spot.cx + 48);
+    const runAt = (bust ? SINK_MS : 0) + STAND_MS;
     let called = false;
     const tick = (now: number): void => {
       if (!leaving) return; // the title came back before he finished
       const t = now - start;
-      if (t < TURN_MS / 2) drawRunner(front, 1);
-      else if (t < TURN_MS) drawRunner(sheet, 8);
-      else {
-        const u = Math.min(1, (t - TURN_MS) / RUN_MS);
-        drawRunner(sheet, Math.floor((t - TURN_MS) / CADENCE_MS) % 8, run * Math.pow(u, 1.6));
+      if (bust && t < SINK_MS) {
+        const u = t / SINK_MS;
+        drawBust(artH * 0.5 * u * u);
+      } else if (t < runAt) {
+        drawRunner(8);
+      } else {
+        const u = Math.min(1, (t - runAt) / RUN_MS);
+        drawRunner(Math.floor((t - runAt) / CADENCE_MS) % 8, run * Math.pow(u, 1.6));
       }
-      if (!called && t >= TURN_MS + RUN_MS * 0.6) {
+      if (!called && t >= runAt + RUN_MS * 0.6) {
         called = true;
         onMidway();
       }
-      if (t < TURN_MS + RUN_MS) requestAnimationFrame(tick);
+      if (t < runAt + RUN_MS) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   };
 
   const choose = (choice: Choice): void => {
     if (leaving) return;
-    if (prefersReducedMotion() || !front || !sheet) {
+    if (prefersReducedMotion() || !sheet) {
       onChoose(choice);
       return;
     }

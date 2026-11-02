@@ -23,7 +23,6 @@ Every fact on the site lives in [src/content.ts](src/content.ts): stages, items,
 Anything still missing is marked `TODO:` in that file and listed in `todos` at the bottom. Right now:
 
 - `finish.nextStage`: what you are looking for (shows on the Continue screen as a visible TODO until you fill it in).
-- `public/sprites/`: the sprites are placeholders (see below).
 - `public/shots/`: the optional product pictures (see below).
 - `public/og.png`: regenerate after the real sprite is in.
 
@@ -32,12 +31,12 @@ Anything still missing is marked `TODO:` in that file and listed in `todos` at t
 | File | What it is |
 | --- | --- |
 | `public/sprites/runner_sheet_1x.png` | One row of 10 frames, 64x64 each, facing right. Frames 1-8 run, 9 stands, 10 catches breath. |
-| `public/sprites/runner_front.png` | Optional. Two 64x64 frames, 128x64 in all: him facing the screen on the title, then the three-quarter turn before he runs. Without it he stands side-on on the title. |
+| `public/sprites/portrait_128.png` | 128x128 portrait with a transparent background. On the title he faces the screen from the bottom edge, then it sinks away and he runs. Without it he stands side-on at the start line. |
 | `public/sprites/portrait_32.png` | 32x32 portrait (shown 3x in the dialogue box, 6x on the status screen). |
 | `public/shots/minearchive.png` | Optional. Shown in a pixel monitor frame at KM 3. Without it the scene draws a map. |
 | `public/shots/sitewatch.png` | Optional. Shown in a pixel phone frame at KM 4. Without it the scene draws a form. |
 
-Drop the files in with the same names and rebuild. `npm run sprites` regenerates the placeholder sprites; do not run it once you have the real ones.
+Drop the files in with the same names and rebuild. The sprites now in the repository are the real ones. `npm run sprites` writes placeholders over `runner_sheet_1x.png` and `portrait_32.png`, so do not run it.
 
 Two small things are drawn on top of the runner in code, because the sheet has no frame for them: the paper cup (from KM 7) and the arms-up pose at the finish. The tapri bench covers his legs so he reads as sitting.
 
